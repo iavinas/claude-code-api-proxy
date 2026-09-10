@@ -18,7 +18,7 @@ Options:
   --timeout-ms <ms>          Per-request timeout (default: 300000)
   --max-body-bytes <bytes>   Request body limit (default: 1048576)
   --max-concurrent <count>   Maximum Claude processes (default: 4)
-  --max-sessions <count>     Maximum opt-in sessions (default: 64)
+  --max-sessions <count>     Maximum active sessions (default: 64)
   --session-ttl-ms <ms>      Session idle lifetime (default: 10800000)
   --help                     Show this help
   --version                  Show the version
@@ -44,7 +44,11 @@ async function main() {
   const config = readConfig(argv);
   const claudeVersion = await getClaudeVersion(config.claudePath);
   const runner = createClaudeRunner(config);
-  const service = createCompletionService({ config, runner });
+  const service = createCompletionService({
+    config,
+    onTurn: ({ mode, sessionId }) => process.stderr.write(`[claude-proxy] ${mode} session=${sessionId}\n`),
+    runner,
+  });
   const server = createProxyServer({
     claudeVersion,
     config,

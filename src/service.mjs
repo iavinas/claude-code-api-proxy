@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import { ClaudeCliError } from './claude-cli.mjs';
 import { OpenAIError } from './errors.mjs';
-import { buildClaudeRequest, toChatCompletion, validateChatRequest } from './protocol.mjs';
-import { createSessionStore } from './session-store.mjs';
+import { buildClaudeRequest, toolCatalog, toChatCompletion, validateChatRequest } from './protocol.mjs';
+import { createSessionStore, deriveConversationKey } from './session-store.mjs';
 
 function createLimiter(limit) {
   let active = 0;
@@ -36,7 +36,10 @@ function sessionOptions(plan) {
 
 async function invokeClaude(options) {
   const { runner, request, context, plan } = options;
-  const claudeRequest = buildClaudeRequest({ ...request, messages: plan.messages });
+  const claudeRequest = buildClaudeRequest(
+    { ...request, messages: plan.messages },
+    { includeTools: plan.includeTools },
+  );
   return runner.run({
     ...claudeRequest,
     model: request.model,
@@ -52,7 +55,7 @@ export function createCompletionService(options) {
     ttlMs: config.sessionTtlMs,
   });
   const limit = createLimiter(config.maxConcurrent);
-  const state = { config, limit, runner, sessions };
+  const state = { config, limit, onTurn: options.onTurn, runner, sessions };
   return {
     complete: (body, context = {}) => completeRequest(state, body, context),
     sessions,
@@ -60,32 +63,45 @@ export function createCompletionService(options) {
 }
 
 async function runWithSessionFallback(state, request, context) {
-  let plan = state.sessions.plan(context.sessionKey, request.messages);
+  const input = { messages: request.messages, tools: toolCatalog(request) };
+  let plan = state.sessions.plan(context.sessionKey, input);
   try {
     const envelope = await invokeClaude({ ...state, request, context, plan });
-    return { envelope, plan };
+    return { envelope, fellBack: false, input, plan };
   } catch (error) {
-    if (!(error instanceof ClaudeCliError) || error.code !== 'session_error' || !plan.resume) mapClaudeError(error);
+    if (!shouldRetryCold(error, plan)) mapClaudeError(error);
   }
   state.sessions.drop(context.sessionKey);
-  plan = state.sessions.plan(context.sessionKey, request.messages);
+  plan = state.sessions.plan(context.sessionKey, input);
   try {
     const envelope = await invokeClaude({ ...state, request, context, plan });
-    return { envelope, plan };
+    return { envelope, fellBack: true, input, plan };
   } catch (error) {
     mapClaudeError(error);
   }
 }
 
+function shouldRetryCold(error, plan) {
+  if (!(error instanceof ClaudeCliError) || !plan.resume) return false;
+  return !['authentication_error', 'invalid_schema', 'not_found', 'request_aborted'].includes(error.code);
+}
+
 async function completeLocked(state, request, context) {
-  const { envelope, plan } = await runWithSessionFallback(state, request, context);
-  state.sessions.commit(context.sessionKey, envelope.session_id ?? plan.id, request.messages);
-  return toChatCompletion({ envelope, output: envelope.structured_output, request });
+  const result = await runWithSessionFallback(state, request, context);
+  const completion = toChatCompletion({ envelope: result.envelope, output: result.envelope.structured_output, request });
+  const sessionId = result.envelope.session_id ?? result.plan.id;
+  state.sessions.commit(context.sessionKey, sessionId, result.input);
+  state.onTurn?.({ mode: result.fellBack ? 'cold-fallback' : result.plan.resume ? 'resumed' : 'cold', sessionId });
+  return completion;
 }
 
 async function completeRequest(state, body, context) {
   const request = validateChatRequest(body, state.config.model);
-  const lockedContext = { ...context, sessionKey: context.sessionKey ?? '' };
+  const conversationKey = context.sessionKey
+    ? `explicit:${context.sessionKey}`
+    : deriveConversationKey(request.messages);
+  const sessionKey = `${request.model}:${conversationKey}`;
+  const lockedContext = { ...context, sessionKey };
   const task = () => state.limit(() => completeLocked(state, request, lockedContext));
   return state.sessions.withLock(lockedContext.sessionKey, task);
 }

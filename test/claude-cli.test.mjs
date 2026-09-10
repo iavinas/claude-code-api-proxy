@@ -16,6 +16,10 @@ test('buildClaudeArgs disables agent capabilities for stateless calls', () => {
   assert.ok(args.includes('--safe-mode'));
   assert.ok(args.includes('--strict-mcp-config'));
   assert.ok(args.includes('--no-session-persistence'));
+  assert.deepEqual(args.slice(args.indexOf('--system-prompt-snapshot'), args.indexOf('--system-prompt-snapshot') + 2), [
+    '--system-prompt-snapshot',
+    'on',
+  ]);
   assert.deepEqual(args.slice(args.indexOf('--tools'), args.indexOf('--tools') + 2), ['--tools', '']);
 });
 

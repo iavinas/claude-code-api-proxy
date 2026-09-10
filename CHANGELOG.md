@@ -10,5 +10,5 @@ All notable changes will be documented here.
 - Text, function tool-call, named tool-choice, parallel-call, and buffered SSE responses.
 - Claude Code structured-output integration with tools and customizations disabled.
 - Optional bearer authentication, body and output limits, concurrency limits, and graceful shutdown.
-- Opt-in, prefix-verified session reuse through `X-Claude-Session-Id`.
+- Automatic, prefix-verified Claude session reuse with delta-only follow-up prompts, cold fallback, and explicit conversation-key overrides.
 - Unit, HTTP, fake-process integration, and opt-in live tests.

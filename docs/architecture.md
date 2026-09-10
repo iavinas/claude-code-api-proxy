@@ -15,7 +15,7 @@
 - `src/protocol.mjs`: OpenAI request validation, Claude prompt/schema creation, and response translation.
 - `src/claude-cli.mjs`: Claude Code process isolation, timeout handling, and output-envelope parsing.
 - `src/service.mjs`: concurrency control and completion orchestration.
-- `src/session-store.mjs`: explicit session reuse, history-prefix validation, TTL, and per-session serialization.
+- `src/session-store.mjs`: automatic session identity, history-prefix validation, TTL, and per-session serialization.
 
 ## Trust boundaries
 
@@ -29,8 +29,10 @@ The proxy only needs Claude to choose a function and produce arguments. Claude C
 
 ## Session model
 
-OpenAI Chat Completions has no standard conversation identifier. Inferring identity from message text can merge unrelated users. The proxy therefore runs statelessly unless the caller supplies `X-Claude-Session-Id`.
+OpenAI Chat Completions has no standard conversation identifier. The proxy derives a default episode key from the model, system message, and first user message. `X-Claude-Session-Id` overrides the inferred identity and should be used when unrelated users can start with identical prompts.
 
-For an explicit key, the store records the Claude session ID and a hash chain over messages already consumed. A later request resumes only when that exact prefix is present and at least one new non-assistant message exists. Requests using the same key are serialized.
+The store records the Claude session ID, a semantic hash chain over consumed messages, and the active tool catalog hash. A later request resumes only when that exact prefix is present and at least one new non-assistant message exists. Generated tool-call IDs are excluded from the semantic hash. Requests using the same key are serialized.
 
-Stateless requests disable Claude Code session persistence. Opt-in sessions remain in Claude Code's local transcript store after the proxy's in-memory index expires; lifecycle management of that external data remains with the operator.
+Cold turns use a fresh UUID with `--session-id`. Resumed turns use `--resume` and send only new non-assistant messages; the tool catalog is repeated only when it changes. A failed resume discards the mapping and retries cold with another fresh UUID.
+
+Session mappings live in memory and expire after the configured TTL. Claude Code transcripts remain in its local store after the proxy mapping expires; lifecycle management of that external data remains with the operator.

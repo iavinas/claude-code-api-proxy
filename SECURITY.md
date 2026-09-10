@@ -11,7 +11,8 @@ Do not open a public issue for a suspected vulnerability. Contact the repository
 - Run the process as an unprivileged operating-system user.
 - Keep Claude and proxy credentials out of command-line arguments, logs, source files, and issue reports.
 - Do not log prompts or tool arguments without an explicit data-retention policy.
-- Prefer stateless requests for sensitive data. Opt-in Claude sessions persist transcripts locally so they can be resumed.
+- Claude sessions persist transcripts locally so they can be resumed. Apply an appropriate local transcript-retention policy for sensitive data.
+- Send a unique `X-Claude-Session-Id` per conversation when multiple users can submit identical starting prompts.
 - Validate every returned tool argument in the application that executes the tool.
 - Apply operating-system resource limits when serving untrusted clients.
 

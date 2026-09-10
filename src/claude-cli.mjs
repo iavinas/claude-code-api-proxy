@@ -5,6 +5,7 @@ const MAX_SCHEMA_BYTES = 100_000;
 const SYSTEM_PROMPT = [
   'You are the language model behind an OpenAI-compatible Chat Completions endpoint.',
   'The prompt contains a JSON transcript. Respect its message roles and tool policy.',
+  'Never infer personal data from the Claude Code account or local environment; use only the supplied transcript and tool results.',
   'Do not use external tools. Return only the requested structured output.',
 ].join(' ');
 
@@ -25,6 +26,7 @@ export function buildClaudeArgs(options) {
     '--safe-mode', '--strict-mcp-config', '--no-chrome',
     '--permission-mode', 'dontAsk', '--tools', '',
     '--system-prompt', SYSTEM_PROMPT,
+    '--system-prompt-snapshot', 'on',
   ];
   addSessionArgs(args, options.session);
   return args;

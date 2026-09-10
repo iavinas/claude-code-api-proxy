@@ -39,6 +39,19 @@ test('buildClaudeRequest preserves roles and supplies tools inline', () => {
   assert.equal(result.schema.properties.kind.enum.length, 2);
 });
 
+test('buildClaudeRequest can omit an unchanged tool catalog from a resumed prompt', () => {
+  const request = validateChatRequest({
+    model: 'sonnet',
+    messages: [{ role: 'user', content: 'Continue' }],
+    tools: [weatherTool],
+  });
+
+  const result = buildClaudeRequest(request, { includeTools: false });
+
+  assert.doesNotMatch(result.prompt, /Get the weather for a city/);
+  assert.equal(result.schema.properties.tool_calls.items.properties.name.const, 'get_weather');
+});
+
 test('named tool choice constrains structured output', () => {
   const request = validateChatRequest({
     model: 'sonnet',

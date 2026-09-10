@@ -12,13 +12,15 @@ Claude Code supports JSON Schema-validated output in print mode. The proxy uses 
 
 Tools remain inline in each Chat Completions request. There is no shared `tools.json`, calls file, MCP recorder, polling loop, or forced process termination.
 
+Session continuity is a core feature, not an optional optimization. The first turn creates a Claude Code session. Follow-up turns resume it with only the new non-assistant messages, so the existing transcript can be read from Claude's prompt cache instead of uploaded again.
+
 ## Requirements
 
 - Node.js 20 or newer.
 - A current Claude Code CLI with `--json-schema` support.
 - Claude Code authentication through `/login` or `ANTHROPIC_API_KEY`.
 
-This version was developed against Claude Code 2.1.260. Check your installation:
+This version was developed against Claude Code 2.1.267. Check your installation:
 
 ```sh
 claude --version
@@ -94,17 +96,21 @@ const completion = await client.chat.completions.create({
 
 ## Session reuse
 
-Chat Completions requests are stateless by default. To reuse Claude Code's prompt cache, send the same private session key on every turn of one conversation:
+Session reuse is automatic. The proxy derives an episode key from the requested model, system message, and first user message. It creates the first turn with `--session-id`, then uses `--resume` with a delta prompt on every matching follow-up.
+
+The client must still send the complete OpenAI message history. Before resuming, the proxy verifies a hash chain over the history already consumed. It omits assistant echoes from the delta because those replies already exist in the Claude session. An unchanged tool catalog is omitted too; a changed catalog is sent again.
+
+For multi-user servers or applications where separate conversations can begin with identical prompts, send a stable private conversation key on every turn:
 
 ```text
 X-Claude-Session-Id: 01J8MY-PRIVATE-CONVERSATION-ID
 ```
 
-The client must still send the complete OpenAI message history. The proxy verifies the history prefix, sends only the new non-assistant messages to the resumed Claude session, serializes requests sharing a key, and expires idle sessions after three hours.
-
 Never reuse a session key between users or unrelated conversations.
 
-Stateless calls use `--no-session-persistence`. Opt-in resumed sessions are persisted by Claude Code in its local configuration directory; the proxy does not delete those transcripts automatically.
+Requests sharing an episode key are serialized. Idle mappings expire after three hours. If resume fails, the proxy retries once from the complete history with a newly minted session ID. The process log reports each completion as `cold`, `resumed`, or `cold-fallback`; an unexpectedly all-cold run is a cost warning.
+
+Claude Code persists these sessions in its local configuration directory. The in-memory episode mapping is lost when the proxy restarts, so the next request starts cold. The proxy does not delete Claude's local transcripts automatically.
 
 ## Configuration
 

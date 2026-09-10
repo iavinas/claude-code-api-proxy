@@ -152,7 +152,7 @@ function normalizeTools(tools) {
   return normalized;
 }
 
-function allowedTools(request) {
+export function toolCatalog(request) {
   const names = new Set(request.toolChoice.names);
   return request.tools.filter((tool) => names.has(tool.function.name));
 }
@@ -193,17 +193,18 @@ function outputSchema(request, tools) {
   };
 }
 
-function promptPayload(request) {
-  return {
+function promptPayload(request, tools, includeTools) {
+  const payload = {
     messages: request.messages,
-    tools: allowedTools(request),
     tool_choice: request.toolChoice,
     parallel_tool_calls: request.parallelToolCalls,
   };
+  if (includeTools) payload.tools = tools;
+  return payload;
 }
 
-export function buildClaudeRequest(request) {
-  const tools = allowedTools(request);
+export function buildClaudeRequest(request, options = {}) {
+  const tools = toolCatalog(request);
   const instructions = [
     'Process this OpenAI Chat Completions request.',
     'Follow developer and system messages before user messages.',
@@ -212,7 +213,7 @@ export function buildClaudeRequest(request) {
     'Never invent a tool name or argument. Do not execute tools.',
   ].join('\n');
   return {
-    prompt: `${instructions}\n\n${JSON.stringify(promptPayload(request), null, 2)}`,
+    prompt: `${instructions}\n\n${JSON.stringify(promptPayload(request, tools, options.includeTools !== false), null, 2)}`,
     schema: outputSchema(request, tools),
   };
 }
@@ -228,7 +229,7 @@ function validateOutput(output, request) {
 }
 
 function normalizeOutputCalls(output, request) {
-  const offered = new Set(allowedTools(request).map(toolName));
+  const offered = new Set(toolCatalog(request).map(toolName));
   return output.tool_calls.map((call) => {
     if (!offered.has(call?.name)) throw new Error(`Claude called "${call?.name}", which was not offered.`);
     if (!isObject(call.arguments)) throw new Error(`Claude returned invalid arguments for "${call.name}".`);
