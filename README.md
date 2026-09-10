@@ -1,5 +1,7 @@
 Compatibility note: request fields `seed` and `temperature` are accepted for OpenAI client compatibility but dropped before invoking Claude Code.
 
+Testing scope: this project has been tested only with text prompts. Image, audio, and other multimodal prompts have not been tested and are not currently supported by the proxy.
+
 # Claude Code API Proxy
 
 A local OpenAI-compatible Chat Completions server backed by the Claude Code CLI.
