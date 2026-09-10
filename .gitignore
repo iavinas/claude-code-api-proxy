@@ -1,0 +1,10 @@
+node_modules/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+
+# Local source material used to design the public implementation.
+old_source_code.mjs
+wir_mcp_server.mjs
