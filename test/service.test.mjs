@@ -94,3 +94,21 @@ test('different models do not share an automatic session', async () => {
 
   assert.equal(calls.at(-1).session.resume, false);
 });
+
+test('service passes the request system message to Claude Code', async () => {
+  const calls = [];
+  const runner = {
+    async run(request) {
+      calls.push(request);
+      return { session_id: request.session.id, structured_output: output, usage: {} };
+    },
+  };
+  const service = createCompletionService({ config, runner });
+
+  await service.complete({ messages: [
+    { role: 'system', content: 'Always start answers with Weather demo:' },
+    { role: 'user', content: 'Hello' },
+  ] });
+
+  assert.equal(calls[0].systemPrompt, 'Always start answers with Weather demo:');
+});

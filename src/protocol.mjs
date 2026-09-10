@@ -203,18 +203,31 @@ function promptPayload(request, tools, includeTools) {
   return payload;
 }
 
+function requestSystemPrompt(messages) {
+  const prompts = messages
+    .filter((message) => message.role === 'system')
+    .map((message) => message.content);
+  return prompts.length ? prompts.join('\n\n') : undefined;
+}
+
+function transcriptMessages(messages) {
+  return messages.filter((message) => message.role !== 'system');
+}
+
 export function buildClaudeRequest(request, options = {}) {
   const tools = toolCatalog(request);
+  const messages = transcriptMessages(options.messages ?? request.messages);
   const instructions = [
     'Process this OpenAI Chat Completions request.',
-    'Follow developer and system messages before user messages.',
+    'Follow developer messages before user messages.',
     'Return kind="message" with content and an empty tool_calls array for a direct answer.',
     'Return kind="tool_calls" with empty content when calling tools.',
     'Never invent a tool name or argument. Do not execute tools.',
   ].join('\n');
   return {
-    prompt: `${instructions}\n\n${JSON.stringify(promptPayload(request, tools, options.includeTools !== false), null, 2)}`,
+    prompt: `${instructions}\n\n${JSON.stringify(promptPayload({ ...request, messages }, tools, options.includeTools !== false), null, 2)}`,
     schema: outputSchema(request, tools),
+    systemPrompt: requestSystemPrompt(request.messages),
   };
 }
 

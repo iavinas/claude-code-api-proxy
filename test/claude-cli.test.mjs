@@ -37,6 +37,19 @@ test('buildClaudeArgs resumes an explicit session', () => {
   assert.equal(args.includes('--no-session-persistence'), false);
 });
 
+test('buildClaudeArgs uses a request system prompt verbatim', () => {
+  const args = buildClaudeArgs({
+    model: 'haiku',
+    schema,
+    systemPrompt: 'Always start answers with Weather demo:',
+  });
+
+  assert.deepEqual(args.slice(args.indexOf('--system-prompt'), args.indexOf('--system-prompt') + 2), [
+    '--system-prompt',
+    'Always start answers with Weather demo:',
+  ]);
+});
+
 test('parseClaudeEnvelope reads structured output', () => {
   const envelope = parseClaudeEnvelope(JSON.stringify({
     is_error: false,

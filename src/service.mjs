@@ -37,8 +37,8 @@ function sessionOptions(plan) {
 async function invokeClaude(options) {
   const { runner, request, context, plan } = options;
   const claudeRequest = buildClaudeRequest(
-    { ...request, messages: plan.messages },
-    { includeTools: plan.includeTools },
+    request,
+    { includeTools: plan.includeTools, messages: plan.messages },
   );
   return runner.run({
     ...claudeRequest,

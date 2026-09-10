@@ -4,7 +4,7 @@
 
 1. The HTTP server authenticates `/v1/*`, limits the request body, and parses JSON.
 2. The protocol layer validates the supported Chat Completions subset.
-3. Messages, inline tool definitions, and tool policy are rendered as a JSON transcript.
+3. OpenAI system messages become Claude Code's system prompt; remaining messages, inline tool definitions, and tool policy are rendered as a JSON transcript.
 4. A per-request JSON Schema constrains Claude to a text response or offered function calls.
 5. Claude Code runs with its tools and customizations disabled.
 6. The validated `structured_output` is converted into a Chat Completion or buffered SSE chunks.

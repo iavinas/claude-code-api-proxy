@@ -134,7 +134,7 @@ Set `CLAUDE_PROXY_API_KEY` to require `Authorization: Bearer ...` on `/v1/*` end
 
 Supported request behavior:
 
-- `developer`, `system`, `user`, `assistant`, `tool`, and deprecated `function` message roles.
+- `developer`, `system`, `user`, `assistant`, `tool`, and deprecated `function` message roles. OpenAI `system` messages replace the proxy's default Claude Code system prompt.
 - String content and arrays containing text parts.
 - Function tools, including `strict` schemas.
 - `tool_choice`: `none`, `auto`, `required`, a named function, and current `allowed_tools` selectors.

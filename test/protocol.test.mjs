@@ -39,6 +39,23 @@ test('buildClaudeRequest preserves roles and supplies tools inline', () => {
   assert.equal(result.schema.properties.kind.enum.length, 2);
 });
 
+test('buildClaudeRequest hoists the OpenAI system message out of the transcript', () => {
+  const request = validateChatRequest({
+    model: 'sonnet',
+    messages: [
+      { role: 'system', content: 'Always start answers with Weather demo:' },
+      { role: 'user', content: 'Hello' },
+    ],
+  });
+
+  const result = buildClaudeRequest(request);
+
+  assert.equal(result.systemPrompt, 'Always start answers with Weather demo:');
+  assert.doesNotMatch(result.prompt, /Always start answers/);
+  assert.doesNotMatch(result.prompt, /"role": "system"/);
+  assert.match(result.prompt, /"role": "user"/);
+});
+
 test('buildClaudeRequest can omit an unchanged tool catalog from a resumed prompt', () => {
   const request = validateChatRequest({
     model: 'sonnet',
