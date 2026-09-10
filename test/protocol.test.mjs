@@ -137,10 +137,21 @@ test('validateChatRequest rejects options that cannot be honored', () => {
     () => validateChatRequest({
       model: 'sonnet',
       messages: [{ role: 'user', content: 'Hello' }],
-      temperature: 0.2,
+      top_p: 0.2,
     }),
-    /temperature is not supported/,
+    /top_p is not supported/,
   );
+});
+
+test('validateChatRequest accepts seed and temperature as ignored compatibility hints', () => {
+  const request = validateChatRequest({
+    model: 'sonnet',
+    messages: [{ role: 'user', content: 'Hello' }],
+    seed: 42,
+    temperature: 0.2,
+  });
+
+  assert.equal(request.model, 'sonnet');
 });
 
 test('validateChatRequest rejects duplicate tool names', () => {

@@ -7,8 +7,8 @@ const TOOL_NAME = /^[A-Za-z0-9_-]{1,64}$/;
 const UNSUPPORTED_OPTIONS = [
   'audio', 'frequency_penalty', 'function_call', 'functions', 'logit_bias',
   'logprobs', 'max_completion_tokens', 'max_tokens', 'modalities', 'prediction',
-  'presence_penalty', 'reasoning_effort', 'response_format', 'seed',
-  'service_tier', 'stop', 'temperature', 'top_logprobs', 'top_p',
+  'presence_penalty', 'reasoning_effort', 'response_format',
+  'service_tier', 'stop', 'top_logprobs', 'top_p',
   'web_search_options',
 ];
 

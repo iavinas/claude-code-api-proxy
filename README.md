@@ -1,3 +1,5 @@
+Compatibility note: request fields `seed` and `temperature` are accepted for OpenAI client compatibility but dropped before invoking Claude Code.
+
 # Claude Code API Proxy
 
 A local OpenAI-compatible Chat Completions server backed by the Claude Code CLI.
@@ -75,6 +77,12 @@ curl http://127.0.0.1:8901/v1/chat/completions \
 ```
 
 The response contains `choices[0].message.tool_calls`. Your application executes the function and sends its result back as a `tool` message, just as it would with the OpenAI Chat Completions API.
+
+### Tool-schema compatibility
+
+Normal nested tool schemas are supported, including objects, arrays, enums, numeric constraints, `required`, `strict: true`, and `additionalProperties: false`.
+
+Tool schemas containing `$ref` or `$defs` are not currently supported. Their JSON Schema references lose the correct scope when the proxy embeds the tool parameters in its combined output schema. Applications that depend on arbitrary OpenAI strict function schemas using `$ref` or `$defs` should wait until this limitation is fixed.
 
 ## OpenAI JavaScript client
 

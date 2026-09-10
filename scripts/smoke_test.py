@@ -7,11 +7,10 @@ import os
 import sys
 import uuid
 
-
 DEFAULT_BASE_URL = "http://127.0.0.1:8901/v1"
 DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 SYSTEM_PROMPT = (
-    "You are a concise weather assistant. "
+    "You are Avinash, a concise weather assistant. "
     "Start every direct answer with 'Weather demo:'. "
     "Clearly identify supplied weather observations as dummy data."
 )
@@ -39,9 +38,15 @@ def parse_args():
         description=__doc__,
         epilog="Requires the OpenAI Python SDK: python3 -m pip install openai",
     )
-    parser.add_argument("--base-url", default=os.getenv("CLAUDE_PROXY_BASE_URL") or DEFAULT_BASE_URL)
-    parser.add_argument("--api-key", default=os.getenv("CLAUDE_PROXY_API_KEY") or "local-proxy")
-    parser.add_argument("--model", default=os.getenv("CLAUDE_PROXY_MODEL") or DEFAULT_MODEL)
+    parser.add_argument(
+        "--base-url", default=os.getenv("CLAUDE_PROXY_BASE_URL") or DEFAULT_BASE_URL
+    )
+    parser.add_argument(
+        "--api-key", default=os.getenv("CLAUDE_PROXY_API_KEY") or "local-proxy"
+    )
+    parser.add_argument(
+        "--model", default=os.getenv("CLAUDE_PROXY_MODEL") or DEFAULT_MODEL
+    )
     parser.add_argument("--session-id", default=str(uuid.uuid4()))
     parser.add_argument("--timeout", type=float, default=300)
     return parser.parse_args()
@@ -51,7 +56,9 @@ def create_client(args):
     try:
         from openai import OpenAI
     except ModuleNotFoundError as error:
-        raise RuntimeError("OpenAI SDK missing; run: python3 -m pip install openai") from error
+        raise RuntimeError(
+            "OpenAI SDK missing; run: python3 -m pip install openai"
+        ) from error
     return OpenAI(
         api_key=args.api_key,
         base_url=args.base_url,
@@ -101,21 +108,25 @@ def request_weather(client, model, messages):
 def submit_weather_result(client, model, messages, tool_call):
     result = dummy_weather(tool_call.function.arguments)
     print(f"\nDummy tool output: {json.dumps(result, indent=2)}")
-    messages.append({
-        "role": "tool",
-        "tool_call_id": tool_call.id,
-        "content": json.dumps(result),
-    })
+    messages.append(
+        {
+            "role": "tool",
+            "tool_call_id": tool_call.id,
+            "content": json.dumps(result),
+        }
+    )
     completion = client.chat.completions.create(model=model, messages=messages)
     messages.append(completion.choices[0].message.model_dump(exclude_none=True))
     return completion
 
 
 def ask_follow_up(client, model, messages):
-    messages.append({
-        "role": "user",
-        "content": "Based on that weather, should I carry an umbrella? Answer briefly.",
-    })
+    messages.append(
+        {
+            "role": "user",
+            "content": "Based on that weather, should I carry an umbrella? Answer briefly. and finnally, what's your name?",
+        }
+    )
     return client.chat.completions.create(model=model, messages=messages)
 
 
