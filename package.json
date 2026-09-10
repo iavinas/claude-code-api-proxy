@@ -1,0 +1,33 @@
+{
+  "name": "claude-code-api-proxy",
+  "version": "0.1.0",
+  "description": "A local OpenAI-compatible Chat Completions server backed by Claude Code.",
+  "type": "module",
+  "bin": {
+    "claude-code-api-proxy": "src/cli.mjs"
+  },
+  "exports": "./src/index.mjs",
+  "files": [
+    "src/",
+    "docs/",
+    "LICENSE",
+    "README.md",
+    "SECURITY.md"
+  ],
+  "scripts": {
+    "start": "node src/cli.mjs",
+    "check": "node scripts/check.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:live": "CLAUDE_PROXY_LIVE_TEST=1 node --test test/live.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "anthropic",
+    "claude-code",
+    "openai-compatible",
+    "proxy"
+  ],
+  "license": "MIT"
+}
